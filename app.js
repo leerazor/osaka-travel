@@ -227,7 +227,7 @@ renderOptions(byId("price-options"), "price", priceOptions);
 
 filters.addEventListener("submit", (event) => event.preventDefault());
 filters.addEventListener("change", render);
-filters.addEventListener("reset", () => queueMicrotask(render));
+filters.addEventListener("reset", () => requestAnimationFrame(render));
 byId("search").addEventListener("input", render);
 byId("sort").addEventListener("change", render);
 byId("close-detail").addEventListener("click", () => dialog.close());
