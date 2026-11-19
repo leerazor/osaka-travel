@@ -1,0 +1,114 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#232b24">
+  <meta name="description" content="난바와 우메다 맛집을 타베로그 평점, 1인 예산, 미쉐린 선정 여부로 찾아보세요.">
+  <title>오사카 맛집 지도 · 난바·우메다</title>
+  <link rel="stylesheet" href="./styles.css">
+  <script src="./restaurants.js" defer></script>
+  <script src="./app.js" defer></script>
+</head>
+<body>
+  <a class="skip" href="#results">맛집 목록으로 건너뛰기</a>
+
+  <header class="hero">
+    <div class="hero-inner wrap">
+      <p class="hero-kicker"><span class="location-dot" aria-hidden="true"></span> 일본 오사카</p>
+      <h1>오사카 맛집 지도</h1>
+      <p class="hero-sub">난바·우메다 식당을 지역, 장르, 예산으로 찾기</p>
+      <div class="hero-meta">
+        <span><strong id="total-count"></strong>곳</span>
+        <span><strong id="category-count"></strong>개 장르</span>
+        <span>타베로그 · 미쉐린 가이드</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap">
+    <form class="filter-panel" id="filters" autocomplete="off" aria-label="맛집 필터">
+      <div class="filter-top">
+        <div class="search">
+          <label class="sr-only" for="search">맛집 검색</label>
+          <input id="search" name="search" type="search" placeholder="식당명, 메뉴, 역 검색" spellcheck="false">
+        </div>
+        <button class="reset" type="reset">초기화</button>
+      </div>
+      <fieldset>
+        <legend>지역</legend>
+        <div class="options" id="area-options"></div>
+      </fieldset>
+      <fieldset>
+        <legend>장르</legend>
+        <div class="options" id="genre-options"></div>
+      </fieldset>
+      <fieldset>
+        <legend>1인 예산</legend>
+        <div class="options" id="price-options"></div>
+      </fieldset>
+      <div class="filter-bottom">
+        <label class="select-label" for="meal">
+          <span>식사</span>
+          <select id="meal" name="meal">
+            <option value="default">기본 예산</option>
+            <option value="lunch">점심</option>
+            <option value="dinner">저녁</option>
+          </select>
+        </label>
+        <label class="select-label" for="recognition">
+          <span>선정</span>
+          <select id="recognition" name="recognition">
+            <option value="all">전체</option>
+            <option value="award">타베로그 어워드</option>
+            <option value="top100">타베로그 백명점</option>
+            <option value="michelin">미쉐린 전체</option>
+            <option value="star">미쉐린 스타</option>
+            <option value="bib">빕 구르망</option>
+            <option value="selected">미쉐린 셀렉티드</option>
+          </select>
+        </label>
+      </div>
+    </form>
+
+    <section id="results" aria-labelledby="results-title">
+      <div class="results-bar">
+        <h2 id="results-title">맛집 목록 <span id="result-count" aria-live="polite"></span></h2>
+        <label class="sr-only" for="sort">정렬</label>
+        <select id="sort" name="sort" form="filters">
+          <option value="rating">평점 높은 순</option>
+          <option value="price-low">예산 낮은 순</option>
+          <option value="price-high">예산 높은 순</option>
+        </select>
+      </div>
+      <div id="cards" class="cards"></div>
+      <div id="empty" class="empty" hidden>
+        <p>조건에 맞는 맛집이 없습니다.</p>
+        <button type="reset" form="filters">필터 초기화</button>
+      </div>
+      <noscript><p>목록을 열려면 브라우저에서 JavaScript를 사용하도록 설정해 주세요.</p></noscript>
+    </section>
+
+    <footer class="footer">
+      <details>
+        <summary>가격과 선정 기준</summary>
+        <p>예산은 타베로그의 1인 기준 가격으로, 리뷰 평균 예산을 우선 적용했습니다. 리뷰 예산 표기가 없으면 매장 표기 예산을 사용했습니다.</p>
+        <p>기본 예산은 저녁을 우선 표시하며 저녁 정보가 없으면 점심을 사용합니다. 예산 범위가 1만 엔에 걸치면 ‘이하’와 ‘이상’ 모두에 표시됩니다. 점심과 저녁을 선택하면 해당 식사 예산이 확인된 곳을 볼 수 있습니다.</p>
+        <p>‘추천’은 타베로그 어워드 수상점입니다. 백명점과 미쉐린은 각 선정 내역을 표시합니다. ‘가이세키·갓포’는 타베로그의 일본 요리 장르를 코스·갓포 중심으로 정리한 항목입니다.</p>
+      </details>
+      <p>2026.11.19 확인 · 평점과 운영 정보는 방문 전 원문에서 확인하세요.</p>
+      <div class="source-links">
+        <a href="https://award.tabelog.com/en/" target="_blank" rel="noopener">타베로그 어워드</a>
+        <a href="https://guide.michelin.com/jp/en/osaka-region/restaurants" target="_blank" rel="noopener">미쉐린 오사카</a>
+      </div>
+    </footer>
+  </main>
+
+  <dialog id="details" aria-labelledby="detail-title">
+    <div class="dialog-inner">
+      <button type="button" id="close-detail" class="close-detail" aria-label="상세 닫기" autofocus>×</button>
+      <div id="detail-content"></div>
+    </div>
+  </dialog>
+</body>
+</html>
