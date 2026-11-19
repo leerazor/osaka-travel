@@ -194,3 +194,7 @@ body:has(dialog[open]) { overflow: hidden; }
   dialog { position: fixed; inset: auto 0 0; width: 100%; max-width: 100%; max-height: 90dvh; margin: 0; border-radius: 18px 18px 0 0; }
   .dialog-inner { padding: 20px 15px max(18px, env(safe-area-inset-bottom)); }
 }
+
+#genre { width: min(100%, 340px); }
+.load-more { display: block; margin: 14px auto 0; min-height: 44px; color: var(--forest); background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 7px 24px; font-weight: 750; }
+.load-more:hover { background: var(--soft-green); }

@@ -6,9 +6,9 @@
   <meta name="theme-color" content="#232b24">
   <meta name="description" content="난바와 우메다 맛집을 타베로그 평점, 1인 예산, 미쉐린 선정 여부로 찾아보세요.">
   <title>오사카 맛집 지도 · 난바·우메다</title>
-  <link rel="stylesheet" href="./styles.css">
-  <script src="./restaurants.js" defer></script>
-  <script src="./app.js" defer></script>
+  <link rel="stylesheet" href="./styles.css?v=2">
+  <script src="./restaurants.js?v=2" defer></script>
+  <script src="./app.js?v=2" defer></script>
 </head>
 <body>
   <a class="skip" href="#results">맛집 목록으로 건너뛰기</a>
@@ -41,7 +41,7 @@
       </fieldset>
       <fieldset>
         <legend>장르</legend>
-        <div class="options" id="genre-options"></div>
+        <select id="genre" name="genre" aria-label="장르"><option value="all">전체 장르</option></select>
       </fieldset>
       <fieldset>
         <legend>1인 예산</legend>
@@ -73,7 +73,7 @@
 
     <section id="results" aria-labelledby="results-title">
       <div class="results-bar">
-        <h2 id="results-title">맛집 목록 <span id="result-count" aria-live="polite"></span></h2>
+        <h2 id="results-title"><span id="list-title">맛집 목록</span> <span id="result-count" aria-live="polite"></span></h2>
         <label class="sr-only" for="sort">정렬</label>
         <select id="sort" name="sort" form="filters">
           <option value="rating">평점 높은 순</option>
@@ -82,6 +82,7 @@
         </select>
       </div>
       <div id="cards" class="cards"></div>
+      <button type="button" class="load-more" id="load-more" hidden>더 보기</button>
       <div id="empty" class="empty" hidden>
         <p>조건에 맞는 맛집이 없습니다.</p>
         <button type="reset" form="filters">필터 초기화</button>
@@ -92,12 +93,13 @@
     <footer class="footer">
       <details>
         <summary>가격과 선정 기준</summary>
-        <p>예산은 타베로그의 1인 기준 가격으로, 리뷰 평균 예산을 우선 적용했습니다. 리뷰 예산 표기가 없으면 매장 표기 예산을 사용했습니다.</p>
-        <p>기본 예산은 저녁을 우선 표시하며 저녁 정보가 없으면 점심을 사용합니다. 예산 범위가 1만 엔에 걸치면 ‘이하’와 ‘이상’ 모두에 표시됩니다. 점심과 저녁을 선택하면 해당 식사 예산이 확인된 곳을 볼 수 있습니다.</p>
+        <p>식당은 타베로그 평점 3.50 이상만 포함했습니다. 장르를 선택하면 현재 조건에서 평점이 높은 순으로 최대 20곳을 선정합니다. 여러 장르로 등록된 식당은 각 장르에서 찾아볼 수 있습니다.</p>
+        <p>예산은 타베로그의 1인 예상 지출 범위입니다. 기본 예산은 저녁을 우선 표시하며 저녁 정보가 없으면 점심을 사용합니다. 예산 범위가 1만 엔에 걸치면 ‘이하’와 ‘이상’ 모두에 표시됩니다. 점심과 저녁을 선택하면 해당 식사 예산이 확인된 곳을 볼 수 있습니다.</p>
         <p>‘추천’은 타베로그 어워드 수상점입니다. 백명점과 미쉐린은 각 선정 내역을 표시합니다. ‘가이세키·갓포’는 타베로그의 일본 요리 장르를 코스·갓포 중심으로 정리한 항목입니다.</p>
       </details>
-      <p>2026.11.19 확인 · 평점과 운영 정보는 방문 전 원문에서 확인하세요.</p>
+      <p>2026.11.19 확인 · 난바·닛폰바시·도톤보리·신사이바시 및 오사카역·우메다·기타신치 일대</p>
       <div class="source-links">
+        <a href="https://tabelog.com/cat_lst/" target="_blank" rel="noopener">타베로그 장르</a>
         <a href="https://award.tabelog.com/en/" target="_blank" rel="noopener">타베로그 어워드</a>
         <a href="https://guide.michelin.com/jp/en/osaka-region/restaurants" target="_blank" rel="noopener">미쉐린 오사카</a>
       </div>

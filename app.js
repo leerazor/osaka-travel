@@ -1,16 +1,7 @@
 "use strict";
 
 const areaNames = { namba: "난바", umeda: "우메다" };
-const genreNames = {
-  sushi: "스시",
-  ramen: "라멘",
-  udon: "우동",
-  kaiseki: "가이세키·갓포",
-  okonomiyaki: "오코노미야키",
-  kushiage: "쿠시카츠",
-  tempura: "덴푸라",
-  yakitori: "야키토리",
-};
+const genreNames = Object.fromEntries(genres.map(({ key, name }) => [key, name]));
 const mealNames = { lunch: "점심", dinner: "저녁" };
 const priceOptions = { all: "전체", under: "1만 엔 이하", over: "1만 엔 이상" };
 const michelinNames = {
@@ -21,11 +12,14 @@ const michelinNames = {
   selected: "미쉐린 셀렉티드",
 };
 const budgetThreshold = 10000;
+const genreLimit = 20;
+const pageSize = 24;
 const yen = new Intl.NumberFormat("ja-JP");
 const byId = (id) => document.getElementById(id);
 const filters = byId("filters");
 const cards = byId("cards");
 const dialog = byId("details");
+let visibleLimit = pageSize;
 
 function element(tag, className, content) {
   const node = document.createElement(tag);
@@ -56,6 +50,7 @@ function renderOptions(container, name, values) {
 }
 
 function formatBudget(range) {
+  if (!range) return "예산 미표기";
   const [min, max] = range;
   if (min === 0) return `¥${yen.format(max)} 이하`;
   if (min === max) return `¥${yen.format(min)}`;
@@ -68,6 +63,8 @@ function selectedMeal(restaurant, meal) {
 }
 
 function matchesPrice(range, price) {
+  if (price === "all") return true;
+  if (!range) return false;
   if (price === "under") return range[0] <= budgetThreshold;
   if (price === "over") return range[1] >= budgetThreshold;
   return true;
@@ -94,7 +91,7 @@ const searchIndex = new Map(restaurants.map((restaurant) => [
   normalize([
     restaurant.name, restaurant.english, restaurant.japanese, restaurant.district,
     restaurant.access, restaurant.note, restaurant.description,
-    areaNames[restaurant.area], genreNames[restaurant.genre],
+    areaNames[restaurant.area], ...restaurant.genres.map((genre) => genreNames[genre]),
   ].join(" ")),
 ]));
 
@@ -115,12 +112,13 @@ function recognitionBadges(restaurant, full = false) {
   return badges;
 }
 
-function cardFor(restaurant, meal) {
+function cardFor(restaurant, meal, genre) {
   const card = element("article", "card");
   const top = element("div", "card-top");
   const title = element("div");
+  const genreLabel = genre === "all" ? genreNames[restaurant.genres[0]] : genreNames[genre];
   title.append(
-    element("p", "card-zone", `${restaurant.district} · ${genreNames[restaurant.genre]}`),
+    element("p", "card-zone", `${restaurant.district} · ${genreLabel}`),
     element("h3", "", restaurant.name),
   );
   const rating = element("div", "rating");
@@ -130,14 +128,17 @@ function cardFor(restaurant, meal) {
 
   const bottom = element("div", "card-bottom");
   const price = element("p", "card-budget");
-  price.append(element("span", "", mealNames[meal]), document.createTextNode(formatBudget(restaurant[meal])));
+  if (restaurant[meal]) price.append(element("span", "", mealNames[meal]));
+  price.append(formatBudget(restaurant[meal]));
   const button = element("button", "detail-button", "상세 보기");
   button.type = "button";
   button.setAttribute("aria-label", `${restaurant.name} 상세 보기`);
   button.setAttribute("aria-haspopup", "dialog");
   button.addEventListener("click", () => openDetails(restaurant));
   bottom.append(price, button);
-  card.append(top, element("p", "card-note", restaurant.note), recognitionBadges(restaurant), bottom);
+  card.append(top);
+  if (restaurant.note) card.append(element("p", "card-note", restaurant.note));
+  card.append(recognitionBadges(restaurant), bottom);
   return card;
 }
 
@@ -150,19 +151,21 @@ function openDetails(restaurant) {
   english.lang = "en";
   const japanese = element("span", "", restaurant.japanese);
   japanese.lang = "ja";
-  names.append(english, document.createTextNode(" · "), japanese);
+  names.append(english);
+  if (restaurant.japanese) names.append(" · ", japanese);
 
   const facts = element("dl", "detail-facts");
-  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(restaurant.japanese + " " + restaurant.address)}`;
-  const addressLink = externalLink(restaurant.address, mapsUrl);
-  addressLink.lang = "ja";
+  const mapLocation = restaurant.address || restaurant.mapStation + " Osaka";
+  const mapsUrl = `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent((restaurant.japanese || restaurant.english) + " " + mapLocation)}`;
+  const addressLink = externalLink(restaurant.address || "상호와 가까운 역으로 지도 열기", mapsUrl);
+  if (restaurant.address) addressLink.lang = "ja";
   const rows = [
     ["타베로그", `${restaurant.rating.toFixed(2)} / 5 · ${restaurant.tabelogGenre}`],
     ["점심 / 1인", restaurant.lunch ? formatBudget(restaurant.lunch) : "타베로그 점심 예산 미표기"],
     ["저녁 / 1인", restaurant.dinner ? formatBudget(restaurant.dinner) : "타베로그 저녁 예산 미표기"],
     ["가까운 역", restaurant.access],
-    ["예약", restaurant.booking],
-    ["주소", addressLink],
+    ["예약", restaurant.booking || "타베로그에서 확인"],
+    [restaurant.address ? "주소" : "위치", addressLink],
   ];
   for (const [label, value] of rows) {
     const description = element("dd");
@@ -175,11 +178,11 @@ function openDetails(restaurant) {
   if (restaurant.michelin) links.append(externalLink("미쉐린 가이드", restaurant.michelin.url));
 
   content.replaceChildren(
-    element("p", "detail-kicker", `${areaNames[restaurant.area]} · ${restaurant.district} · ${genreNames[restaurant.genre]}`),
+    element("p", "detail-kicker", `${areaNames[restaurant.area]} · ${restaurant.district} · ${genreNames[restaurant.genres[0]]}`),
     title,
     names,
     recognitionBadges(restaurant, true),
-    element("p", "detail-description", restaurant.description),
+    ...(restaurant.description ? [element("p", "detail-description", restaurant.description)] : []),
     facts,
     links,
   );
@@ -201,35 +204,59 @@ function render() {
   for (const restaurant of restaurants) {
     const meal = selectedMeal(restaurant, mealFilter);
     const range = restaurant[meal];
-    if (!range || !matchesPrice(range, price) || !matchesRecognition(restaurant, recognition)) continue;
+    if ((mealFilter !== "default" && !range) || !matchesPrice(range, price) || !matchesRecognition(restaurant, recognition)) continue;
     if (area !== "all" && restaurant.area !== area) continue;
-    if (genre !== "all" && restaurant.genre !== genre) continue;
+    if (genre !== "all" && !restaurant.genres.includes(genre)) continue;
     if (!queryTerms.every((term) => searchIndex.get(restaurant).includes(term))) continue;
     matches.push({ restaurant, meal, range });
   }
 
-  matches.sort((a, b) => {
-    if (sort === "price-low" && a.range[0] !== b.range[0]) return a.range[0] - b.range[0];
-    if (sort === "price-high" && a.range[1] !== b.range[1]) return b.range[1] - a.range[1];
-    return b.restaurant.rating - a.restaurant.rating || a.restaurant.name.localeCompare(b.restaurant.name, "ko");
-  });
+  const byRating = (a, b) => b.restaurant.rating - a.restaurant.rating || a.restaurant.name.localeCompare(b.restaurant.name, "ko");
+  matches.sort(byRating);
+  const ranked = genre === "all" ? matches : matches.slice(0, genreLimit);
+  if (sort === "price-low") ranked.sort((a, b) => (a.range?.[0] ?? Infinity) - (b.range?.[0] ?? Infinity) || byRating(a, b));
+  if (sort === "price-high") ranked.sort((a, b) => (b.range?.[1] ?? -1) - (a.range?.[1] ?? -1) || byRating(a, b));
+  const shown = ranked.slice(0, visibleLimit);
+  cards.replaceChildren(...shown.map(({ restaurant, meal }) => cardFor(restaurant, meal, genre)));
+  byId("list-title").textContent = genre === "all" ? "맛집 목록" : genreNames[genre];
+  byId("result-count").textContent = `${ranked.length}곳`;
+  byId("empty").hidden = ranked.length > 0;
+  const more = byId("load-more");
+  more.hidden = shown.length >= ranked.length;
+  more.textContent = `더 보기 (${shown.length} / ${ranked.length})`;
+}
 
-  cards.replaceChildren(...matches.map(({ restaurant, meal }) => cardFor(restaurant, meal)));
-  byId("result-count").textContent = `${matches.length}곳`;
-  byId("empty").hidden = matches.length > 0;
+function renderFromStart() {
+  visibleLimit = pageSize;
+  render();
 }
 
 byId("total-count").textContent = restaurants.length;
-byId("category-count").textContent = new Set(restaurants.map(({ genre }) => genre)).size;
+byId("category-count").textContent = genres.length;
 renderOptions(byId("area-options"), "area", { all: "전체", ...areaNames });
-renderOptions(byId("genre-options"), "genre", { all: "전체", ...genreNames });
+const genreGroups = new Map();
+for (const genre of genres) {
+  if (!genreGroups.has(genre.group)) {
+    const group = element("optgroup");
+    group.label = genre.group;
+    genreGroups.set(genre.group, group);
+    byId("genre").append(group);
+  }
+  const option = element("option", "", genre.name);
+  option.value = genre.key;
+  genreGroups.get(genre.group).append(option);
+}
 renderOptions(byId("price-options"), "price", priceOptions);
 
 filters.addEventListener("submit", (event) => event.preventDefault());
-filters.addEventListener("change", render);
-filters.addEventListener("reset", () => requestAnimationFrame(render));
-byId("search").addEventListener("input", render);
-byId("sort").addEventListener("change", render);
+filters.addEventListener("change", renderFromStart);
+filters.addEventListener("reset", () => setTimeout(renderFromStart, 0));
+byId("search").addEventListener("input", renderFromStart);
+byId("sort").addEventListener("change", renderFromStart);
+byId("load-more").addEventListener("click", () => {
+  visibleLimit += pageSize;
+  render();
+});
 byId("close-detail").addEventListener("click", () => dialog.close());
 dialog.addEventListener("click", (event) => {
   if (event.target === dialog) dialog.close();
