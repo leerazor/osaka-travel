@@ -2,6 +2,20 @@
 
 const areaNames = { namba: "난바", umeda: "우메다" };
 const genreNames = Object.fromEntries(genres.map(({ key, name }) => [key, name]));
+const stationNames = {
+  Namba: "난바역", "Osaka Namba": "오사카난바역", "JR Namba": "JR 난바역",
+  Nippombashi: "닛폰바시역", "Kintetsu Nippombashi": "긴테쓰 닛폰바시역",
+  Shinsaibashi: "신사이바시역", Nagahoribashi: "나가호리바시역", Yotsubashi: "요츠바시역",
+  Nishinagahori: "니시나가호리역", Nishiohashi: "니시오하시역", Matsuyamachi: "마쓰야마치역",
+  Hommachi: "혼마치역", "Sakaisuji Hommachi": "사카이스지혼마치역",
+  "Tanimachi 9 Chome": "다니마치9초메역", Ebisucho: "에비스초역", Sakuragawa: "사쿠라가와역",
+  Osaka: "오사카역", Umeda: "우메다역", "Osaka Umeda": "오사카우메다역",
+  "Higashi Umeda": "히가시우메다역", "Nishi Umeda": "니시우메다역",
+  Kitashinchi: "기타신치역", Nakatsu: "나카쓰역", Nakazakicho: "나카자키초역",
+  Naniwabashi: "나니와바시역", Oebashi: "오에바시역", Watanabebashi: "와타나베바시역",
+  Nakanoshima: "나카노시마역", Ogimachi: "오기마치역", Temma: "덴마역",
+  Fukushima: "후쿠시마역", "Tenjimbashisuji Rokuchome": "덴진바시스지로쿠초메역",
+};
 const mealNames = { lunch: "점심", dinner: "저녁" };
 const priceOptions = { all: "전체", under: "1만 엔 이하", over: "1만 엔 이상" };
 const michelinNames = {
@@ -19,6 +33,10 @@ const byId = (id) => document.getElementById(id);
 const filters = byId("filters");
 const cards = byId("cards");
 const dialog = byId("details");
+const genrePicker = byId("genre-picker");
+const genreSearch = byId("genre-search");
+const locationFilter = byId("location");
+let selectedGenre = "all";
 let visibleLimit = pageSize;
 
 function element(tag, className, content) {
@@ -86,14 +104,100 @@ function normalize(text) {
   return text.toLowerCase().normalize("NFKC").replace(/[^\p{L}\p{N}]/gu, "");
 }
 
+function stationName(restaurant) {
+  return stationNames[restaurant.mapStation] || restaurant.mapStation;
+}
+
+function hasSeparateDistrict(restaurant) {
+  return restaurant.district !== stationName(restaurant) &&
+    restaurant.district !== stationName(restaurant).replace(/역$/, "");
+}
+
 const searchIndex = new Map(restaurants.map((restaurant) => [
   restaurant,
   normalize([
     restaurant.name, restaurant.english, restaurant.japanese, restaurant.district,
-    restaurant.access, restaurant.note, restaurant.description,
+    restaurant.access, restaurant.mapStation, stationName(restaurant), restaurant.note, restaurant.description,
     areaNames[restaurant.area], ...restaurant.genres.map((genre) => genreNames[genre]),
   ].join(" ")),
 ]));
+
+function renderLocationOptions() {
+  const stations = new Map();
+  const districts = new Set();
+  for (const restaurant of restaurants) {
+    if (restaurant.mapStation) stations.set(restaurant.mapStation, stationName(restaurant));
+    if (hasSeparateDistrict(restaurant)) districts.add(restaurant.district);
+  }
+  for (const [label, prefix, entries] of [
+    ["가까운 역", "station:", [...stations]],
+    ["동네", "district:", [...districts].map((district) => [district, district])],
+  ]) {
+    const group = element("optgroup");
+    group.label = label;
+    entries.sort((a, b) => a[1].localeCompare(b[1], "ko"));
+    for (const [key, name] of entries) {
+      const option = element("option", "", name);
+      option.value = prefix + key;
+      group.append(option);
+    }
+    locationFilter.append(group);
+  }
+}
+
+function renderGenreOptions() {
+  const value = normalize(genreSearch.value);
+  const matches = genres.filter(({ key, name }) =>
+    [key, name].some((label) => normalize(label).includes(value)));
+  const options = byId("genre-results");
+  options.replaceChildren();
+  if (!value) options.append(genreOption("all", "전체 장르"));
+  const groups = new Map();
+  for (const { key, name, group } of matches) {
+    if (!groups.has(group)) {
+      const section = element("section", "genre-group");
+      const heading = element("h3", "", group);
+      heading.id = `genre-group-${groups.size}`;
+      section.setAttribute("aria-labelledby", heading.id);
+      section.append(heading);
+      options.append(section);
+      groups.set(group, section);
+    }
+    groups.get(group).append(genreOption(key, name));
+  }
+  byId("genre-empty").hidden = matches.length > 0;
+  options.scrollTop = 0;
+}
+
+function genreOption(key, name) {
+  const button = element("button", "genre-option", name);
+  button.type = "button";
+  button.setAttribute("aria-pressed", String(key === selectedGenre));
+  button.addEventListener("click", () => {
+    selectedGenre = key;
+    genrePicker.close();
+    renderFromStart();
+  });
+  return button;
+}
+
+function cardFilter(label, active, apply) {
+  const button = element("button", "card-filter", label);
+  button.type = "button";
+  button.setAttribute("aria-pressed", String(active));
+  button.addEventListener("click", () => {
+    apply();
+    renderFromStart();
+    byId("results-title").focus();
+    byId("results").scrollIntoView({ block: "start" });
+  });
+  return button;
+}
+
+function locationTag(label, value) {
+  const active = locationFilter.value === value;
+  return cardFilter(label, active, () => { locationFilter.value = active ? "all" : value; });
+}
 
 function recognitionBadges(restaurant, full = false) {
   const badges = element("div", "badges");
@@ -116,11 +220,19 @@ function cardFor(restaurant, meal, genre) {
   const card = element("article", "card");
   const top = element("div", "card-top");
   const title = element("div");
-  const genreLabel = genre === "all" ? genreNames[restaurant.genres[0]] : genreNames[genre];
-  title.append(
-    element("p", "card-zone", `${restaurant.district} · ${genreLabel}`),
-    element("h3", "", restaurant.name),
-  );
+  const tags = element("div", "card-zone");
+  if (hasSeparateDistrict(restaurant)) {
+    tags.append(locationTag(restaurant.district, "district:" + restaurant.district));
+  }
+  if (restaurant.mapStation) {
+    tags.append(locationTag(stationName(restaurant), "station:" + restaurant.mapStation));
+  }
+  const cardGenre = genre === "all" ? restaurant.genres[0] : genre;
+  const genreActive = selectedGenre === cardGenre;
+  tags.append(cardFilter(genreNames[cardGenre], genreActive, () => {
+    selectedGenre = genreActive ? "all" : cardGenre;
+  }));
+  title.append(tags, element("h3", "", restaurant.name));
   const rating = element("div", "rating");
   rating.setAttribute("aria-label", `타베로그 평점 ${restaurant.rating.toFixed(2)}`);
   rating.append(element("strong", "", restaurant.rating.toFixed(2)), element("small", "", "타베로그"));
@@ -194,7 +306,8 @@ function render() {
   const values = new FormData(filters);
   const queryTerms = values.get("search").trim().split(/\s+/).map(normalize).filter(Boolean);
   const area = values.get("area");
-  const genre = values.get("genre");
+  const genre = selectedGenre;
+  const location = values.get("location");
   const price = values.get("price");
   const recognition = values.get("recognition");
   const mealFilter = values.get("meal");
@@ -206,6 +319,8 @@ function render() {
     const range = restaurant[meal];
     if ((mealFilter !== "default" && !range) || !matchesPrice(range, price) || !matchesRecognition(restaurant, recognition)) continue;
     if (area !== "all" && restaurant.area !== area) continue;
+    if (location !== "all" && location !== "station:" + restaurant.mapStation &&
+        location !== "district:" + restaurant.district) continue;
     if (genre !== "all" && !restaurant.genres.includes(genre)) continue;
     if (!queryTerms.every((term) => searchIndex.get(restaurant).includes(term))) continue;
     matches.push({ restaurant, meal, range });
@@ -218,7 +333,12 @@ function render() {
   if (sort === "price-high") ranked.sort((a, b) => (b.range?.[1] ?? -1) - (a.range?.[1] ?? -1) || byRating(a, b));
   const shown = ranked.slice(0, visibleLimit);
   cards.replaceChildren(...shown.map(({ restaurant, meal }) => cardFor(restaurant, meal, genre)));
-  byId("list-title").textContent = genre === "all" ? "맛집 목록" : genreNames[genre];
+  const headings = [];
+  if (location !== "all") headings.push(locationFilter.selectedOptions[0].textContent);
+  if (genre !== "all") headings.push(genreNames[genre]);
+  byId("list-title").textContent = headings.join(" · ") || "맛집 목록";
+  byId("open-genre").textContent = genreNames[genre] || "전체 장르";
+  byId("open-genre").setAttribute("aria-label", "장르 선택 · " + (genreNames[genre] || "전체 장르"));
   byId("result-count").textContent = `${ranked.length}곳`;
   byId("empty").hidden = ranked.length > 0;
   const more = byId("load-more");
@@ -234,23 +354,30 @@ function renderFromStart() {
 byId("total-count").textContent = restaurants.length;
 byId("category-count").textContent = genres.length;
 renderOptions(byId("area-options"), "area", { all: "전체", ...areaNames });
-const genreGroups = new Map();
-for (const genre of genres) {
-  if (!genreGroups.has(genre.group)) {
-    const group = element("optgroup");
-    group.label = genre.group;
-    genreGroups.set(genre.group, group);
-    byId("genre").append(group);
-  }
-  const option = element("option", "", genre.name);
-  option.value = genre.key;
-  genreGroups.get(genre.group).append(option);
-}
+renderLocationOptions();
 renderOptions(byId("price-options"), "price", priceOptions);
 
 filters.addEventListener("submit", (event) => event.preventDefault());
 filters.addEventListener("change", renderFromStart);
-filters.addEventListener("reset", () => setTimeout(renderFromStart, 0));
+filters.addEventListener("reset", () => {
+  selectedGenre = "all";
+  setTimeout(renderFromStart, 0);
+});
+byId("open-genre").addEventListener("click", () => {
+  genreSearch.value = "";
+  renderGenreOptions();
+  genrePicker.showModal();
+});
+genreSearch.addEventListener("input", renderGenreOptions);
+genreSearch.addEventListener("keydown", (event) => {
+  if (event.key !== "Enter" || event.isComposing) return;
+  const matches = byId("genre-results").querySelectorAll("button");
+  if (matches.length === 1) matches[0].click();
+});
+byId("close-genre").addEventListener("click", () => genrePicker.close());
+genrePicker.addEventListener("click", (event) => {
+  if (event.target === genrePicker) genrePicker.close();
+});
 byId("search").addEventListener("input", renderFromStart);
 byId("sort").addEventListener("change", renderFromStart);
 byId("load-more").addEventListener("click", () => {

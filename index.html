@@ -6,9 +6,9 @@
   <meta name="theme-color" content="#232b24">
   <meta name="description" content="난바와 우메다 맛집을 타베로그 평점, 1인 예산, 미쉐린 선정 여부로 찾아보세요.">
   <title>오사카 맛집 지도 · 난바·우메다</title>
-  <link rel="stylesheet" href="./styles.css?v=2">
-  <script src="./restaurants.js?v=2" defer></script>
-  <script src="./app.js?v=2" defer></script>
+  <link rel="stylesheet" href="./styles.css?v=3">
+  <script src="./restaurants.js?v=3" defer></script>
+  <script src="./app.js?v=3" defer></script>
 </head>
 <body>
   <a class="skip" href="#results">맛집 목록으로 건너뛰기</a>
@@ -39,10 +39,18 @@
         <legend>지역</legend>
         <div class="options" id="area-options"></div>
       </fieldset>
-      <fieldset>
-        <legend>장르</legend>
-        <select id="genre" name="genre" aria-label="장르"><option value="all">전체 장르</option></select>
-      </fieldset>
+      <div class="filter-choices">
+        <fieldset>
+          <legend>장르</legend>
+          <button class="filter-choice" id="open-genre" type="button" aria-haspopup="dialog" aria-controls="genre-picker">전체 장르</button>
+        </fieldset>
+        <fieldset>
+          <legend><label for="location">역·동네</label></legend>
+          <select class="filter-choice" id="location" name="location">
+            <option value="all">전체 역·동네</option>
+          </select>
+        </fieldset>
+      </div>
       <fieldset>
         <legend>1인 예산</legend>
         <div class="options" id="price-options"></div>
@@ -73,7 +81,7 @@
 
     <section id="results" aria-labelledby="results-title">
       <div class="results-bar">
-        <h2 id="results-title"><span id="list-title">맛집 목록</span> <span id="result-count" aria-live="polite"></span></h2>
+        <h2 id="results-title" tabindex="-1"><span id="list-title">맛집 목록</span> <span id="result-count" aria-live="polite"></span></h2>
         <label class="sr-only" for="sort">정렬</label>
         <select id="sort" name="sort" form="filters">
           <option value="rating">평점 높은 순</option>
@@ -105,6 +113,19 @@
       </div>
     </footer>
   </main>
+
+  <dialog id="genre-picker" aria-labelledby="genre-title">
+    <div class="genre-header">
+      <h2 id="genre-title">장르 선택</h2>
+      <button type="button" class="close-detail" id="close-genre" aria-label="장르 선택 닫기">×</button>
+      <div class="search">
+        <label class="sr-only" for="genre-search">장르 검색</label>
+        <input id="genre-search" type="search" inputmode="search" placeholder="장르명 검색 (예: 스시, 라멘)" autocomplete="off" spellcheck="false" autofocus>
+      </div>
+    </div>
+    <div id="genre-results" class="genre-results"></div>
+    <p id="genre-empty" class="genre-empty" role="status" hidden>검색 결과가 없습니다.</p>
+  </dialog>
 
   <dialog id="details" aria-labelledby="detail-title">
     <div class="dialog-inner">
