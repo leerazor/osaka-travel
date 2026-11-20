@@ -149,6 +149,11 @@ select {
 .badge-award { background: var(--soft-red); color: #8c312a; }
 .badge-top100 { background: #f1ecdd; color: #5e4b2a; }
 .badge-michelin { background: #eee9f4; color: #583b6c; }
+.michelin-toggle { min-height: 42px; padding: 5px 10px; border-radius: 8px; font-size: .875rem; font-weight: 750; }
+button.badge-michelin { position: relative; z-index: 1; min-height: 32px; }
+.michelin-toggle, button.badge-michelin { border: 1px solid #cfc0de; background: #eee9f4; color: #583b6c; }
+.michelin-toggle:hover, button.badge-michelin:hover { background: #e2d6ed; }
+.michelin-toggle[aria-pressed="true"], button.badge-michelin[aria-pressed="true"] { border-color: #583b6c; background: #583b6c; color: white; }
 .card-bottom { align-items: center; margin-top: auto; padding-top: 6px; border-top: 1px solid #e9e9e0; }
 .card-budget { margin: 0; font-variant-numeric: tabular-nums; font-weight: 780; font-size: .96rem; }
 .card-budget span { color: var(--muted); font-size: .78rem; font-weight: 650; margin-right: 4px; }

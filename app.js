@@ -36,6 +36,8 @@ const dialog = byId("details");
 const genrePicker = byId("genre-picker");
 const genreSearch = byId("genre-search");
 const locationFilter = byId("location");
+const recognitionFilter = byId("recognition");
+const michelinOnly = byId("michelin-only");
 let selectedGenre = "all";
 let visibleLimit = pageSize;
 
@@ -94,10 +96,12 @@ function matchesRecognition(restaurant, recognition) {
     case "top100": return Boolean(restaurant.top100);
     case "michelin": return Boolean(restaurant.michelin);
     case "star": return Boolean(restaurant.michelin?.distinction.startsWith("star"));
-    case "bib":
-    case "selected": return restaurant.michelin?.distinction === recognition;
-    default: return true;
+    default: return !Object.hasOwn(michelinNames, recognition) || restaurant.michelin?.distinction === recognition;
   }
+}
+
+function isMichelinFilter(value) {
+  return value === "michelin" || value === "star" || Object.hasOwn(michelinNames, value);
 }
 
 function normalize(text) {
@@ -181,8 +185,8 @@ function genreOption(key, name) {
   return button;
 }
 
-function cardFilter(label, active, apply) {
-  const button = element("button", "card-filter", label);
+function cardFilter(label, active, apply, className = "card-filter") {
+  const button = element("button", className, label);
   button.type = "button";
   button.setAttribute("aria-pressed", String(active));
   button.addEventListener("click", () => {
@@ -209,9 +213,16 @@ function recognitionBadges(restaurant, full = false) {
     badges.append(element("span", "badge badge-top100", `백명점 ${restaurant.top100}`));
   }
   if (restaurant.michelin) {
-    const title = michelinNames[restaurant.michelin.distinction];
-    const label = full ? `${title} ${restaurant.michelin.year}` : title;
-    badges.append(element("span", "badge badge-michelin", label));
+    const { distinction, year } = restaurant.michelin;
+    const title = michelinNames[distinction];
+    if (full) {
+      badges.append(element("span", "badge badge-michelin", `${title} ${year}`));
+    } else {
+      const active = recognitionFilter.value === distinction;
+      badges.append(cardFilter(title, active, () => {
+        recognitionFilter.value = active ? "all" : distinction;
+      }, "badge badge-michelin"));
+    }
   }
   return badges;
 }
@@ -336,7 +347,9 @@ function render() {
   const headings = [];
   if (location !== "all") headings.push(locationFilter.selectedOptions[0].textContent);
   if (genre !== "all") headings.push(genreNames[genre]);
+  if (recognition !== "all") headings.push(recognitionFilter.selectedOptions[0].textContent);
   byId("list-title").textContent = headings.join(" · ") || "맛집 목록";
+  michelinOnly.setAttribute("aria-pressed", String(isMichelinFilter(recognition)));
   byId("open-genre").textContent = genreNames[genre] || "전체 장르";
   byId("open-genre").setAttribute("aria-label", "장르 선택 · " + (genreNames[genre] || "전체 장르"));
   byId("result-count").textContent = `${ranked.length}곳`;
@@ -359,6 +372,10 @@ renderOptions(byId("price-options"), "price", priceOptions);
 
 filters.addEventListener("submit", (event) => event.preventDefault());
 filters.addEventListener("change", renderFromStart);
+michelinOnly.addEventListener("click", () => {
+  recognitionFilter.value = isMichelinFilter(recognitionFilter.value) ? "all" : "michelin";
+  renderFromStart();
+});
 filters.addEventListener("reset", () => {
   selectedGenre = "all";
   setTimeout(renderFromStart, 0);

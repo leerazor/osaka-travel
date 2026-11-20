@@ -6,9 +6,9 @@
   <meta name="theme-color" content="#232b24">
   <meta name="description" content="난바와 우메다 맛집을 타베로그 평점, 1인 예산, 미쉐린 선정 여부로 찾아보세요.">
   <title>오사카 맛집 지도 · 난바·우메다</title>
-  <link rel="stylesheet" href="./styles.css?v=3">
+  <link rel="stylesheet" href="./styles.css?v=4">
   <script src="./restaurants.js?v=3" defer></script>
-  <script src="./app.js?v=3" defer></script>
+  <script src="./app.js?v=4" defer></script>
 </head>
 <body>
   <a class="skip" href="#results">맛집 목록으로 건너뛰기</a>
@@ -52,6 +52,28 @@
         </fieldset>
       </div>
       <fieldset>
+        <legend><label for="recognition">미쉐린·수상</label></legend>
+        <div class="options">
+          <button class="michelin-toggle" id="michelin-only" type="button" aria-pressed="false">미쉐린만 보기</button>
+          <select id="recognition" name="recognition">
+            <option value="all">전체 선정</option>
+            <optgroup label="미쉐린">
+              <option value="michelin">미쉐린 전체</option>
+              <option value="star">미쉐린 스타 전체</option>
+              <option value="star1">미쉐린 1스타</option>
+              <option value="star2">미쉐린 2스타</option>
+              <option value="star3">미쉐린 3스타</option>
+              <option value="bib">미쉐린 빕 구르망</option>
+              <option value="selected">미쉐린 셀렉티드</option>
+            </optgroup>
+            <optgroup label="타베로그">
+              <option value="award">타베로그 어워드</option>
+              <option value="top100">타베로그 백명점</option>
+            </optgroup>
+          </select>
+        </div>
+      </fieldset>
+      <fieldset>
         <legend>1인 예산</legend>
         <div class="options" id="price-options"></div>
       </fieldset>
@@ -62,18 +84,6 @@
             <option value="default">기본 예산</option>
             <option value="lunch">점심</option>
             <option value="dinner">저녁</option>
-          </select>
-        </label>
-        <label class="select-label" for="recognition">
-          <span>선정</span>
-          <select id="recognition" name="recognition">
-            <option value="all">전체</option>
-            <option value="award">타베로그 어워드</option>
-            <option value="top100">타베로그 백명점</option>
-            <option value="michelin">미쉐린 전체</option>
-            <option value="star">미쉐린 스타</option>
-            <option value="bib">빕 구르망</option>
-            <option value="selected">미쉐린 셀렉티드</option>
           </select>
         </label>
       </div>
